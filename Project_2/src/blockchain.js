@@ -219,16 +219,18 @@ class Blockchain {
         let errorLog = [];
         
         return new Promise(async (resolve, reject) => {
-            for (let i = 0; i < self.chain.length; i++) {
+            let blockValid;
+            
+            for (let i = 1; i < self.chain.length; i++) {
                 try {
-                    let blockValid = await self.chain[i].validate();
+                    blockValid = await self.chain[i].validate();
                 } catch (error) {
                     reject(error);
                 }
 
                 if (blockValid) {
                     if (self.chain[i].previousBlockHash !== self.chain[i - 1].hash) {
-                        errorLog.push(`Block id ${self.chain[i - 1].height} is breaking the chain - the previous and current hash values do not match`);
+                        errorLog.push(`Block id ${self.chain[i].height} is breaking the chain - the previous and current hash values do not match`);
                     }
                 } else {
                     errorLog.push(`Block id ${self.chain[i].height} failed the block validation`);

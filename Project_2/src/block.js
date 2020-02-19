@@ -47,9 +47,10 @@ class Block {
                 time: self.time,
                 previousBlockHash: self.previousBlockHash
             };
+            let hash;
 
             try {
-                let hash = SHA256(JSON.stringify(block)).toString();
+                hash = SHA256(JSON.stringify(block)).toString();
             } catch (error) {
                 reject(error);
             }
