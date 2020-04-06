@@ -85,7 +85,7 @@ To run the unit tests, open a terminal and run `truffle test`.
 
 You should see an output similar to this one:
 
-![Specialty Coffee](../assets/screenshots/truffle_test.png?raw=true 'Truffle Test')
+![Specialty Coffee](/Project_4/assets/screenshots/truffle_test.png?raw=true 'Truffle Test')
 
 ## Project Assignment Details
 
