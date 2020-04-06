@@ -10,7 +10,7 @@ It is part of an Udacity Blockchain Dev program assignment and should only not b
 
 The main page displays a quick-start guide, actions for each supply chain participant, followed by a transaction history output.
 
-![Specialty Coffee](../master/assets/screenshots/main_page.png?raw=true 'Main Page')
+![Specialty Coffee](../assets/screenshots/main_page.png?raw=true 'Main Page')
 
 ## Stack Composition
 
@@ -85,7 +85,7 @@ To run the unit tests, open a terminal and run `truffle test`.
 
 You should see an output similar to this one:
 
-![Specialty Coffee](../master/assets/screenshots/truffle_test.png?raw=true 'Truffle Test')
+![Specialty Coffee](../assets/screenshots/truffle_test.png?raw=true 'Truffle Test')
 
 ## Project Assignment Details
 
@@ -95,20 +95,20 @@ This project has been deployed on the Ethereum's Rinkeby test network and the co
 
 ### Transaction history per action on Rinkeby
 
-![Specialty Coffee](../master/assets/screenshots/rinkeby_transaction_hist.png?raw=true 'Rinkeby Transaction History')
+![Specialty Coffee](../assets/screenshots/rinkeby_transaction_hist.png?raw=true 'Rinkeby Transaction History')
 
 ### UML Activity Diagram
 
-![Specialty Coffee](../master/assets/screenshots/uml_activity_diagram.png.png?raw=true 'UML Activity Diagram')
+![Specialty Coffee](../assets/screenshots/uml_activity_diagram.png.png?raw=true 'UML Activity Diagram')
 
 ### UML Sequence Diagram
 
-![Specialty Coffee](../master/assets/screenshots/uml_sequence_diagram.png.png?raw=true 'UML Sequence Diagram')
+![Specialty Coffee](../assets/screenshots/uml_sequence_diagram.png.png?raw=true 'UML Sequence Diagram')
 
 ### UML State Diagram
 
-![Specialty Coffee](../master/assets/screenshots/uml_state_diagram.png.png?raw=true 'UML State Diagram')
+![Specialty Coffee](../assets/screenshots/uml_state_diagram.png.png?raw=true 'UML State Diagram')
 
 ### UML Class Diagram
 
-![Specialty Coffee](../master/assets/screenshots/uml_class_diagram.png.png?raw=true 'UML Class Diagram')
+![Specialty Coffee](../assets/screenshots/uml_class_diagram.png.png?raw=true 'UML Class Diagram')
