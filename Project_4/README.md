@@ -99,16 +99,16 @@ This project has been deployed on the Ethereum's Rinkeby test network and the co
 
 ### UML Activity Diagram
 
-![Specialty Coffee](/Project_4/assets/screenshots/uml_activity_diagram.png.png?raw=true 'UML Activity Diagram')
+![Specialty Coffee](/Project_4/assets/screenshots/uml_activity_diagram.png?raw=true 'UML Activity Diagram')
 
 ### UML Sequence Diagram
 
-![Specialty Coffee](/Project_4/assets/screenshots/uml_sequence_diagram.png.png?raw=true 'UML Sequence Diagram')
+![Specialty Coffee](/Project_4/assets/screenshots/uml_sequence_diagram.png?raw=true 'UML Sequence Diagram')
 
 ### UML State Diagram
 
-![Specialty Coffee](/Project_4/assets/screenshots/uml_state_diagram.png.png?raw=true 'UML State Diagram')
+![Specialty Coffee](/Project_4/assets/screenshots/uml_state_diagram.png?raw=true 'UML State Diagram')
 
 ### UML Class Diagram
 
-![Specialty Coffee](/Project_4/assets/screenshots/uml_class_diagram.png.png?raw=true 'UML Class Diagram')
+![Specialty Coffee](/Project_4/assets/screenshots/uml_class_diagram.png?raw=true 'UML Class Diagram')
