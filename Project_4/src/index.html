@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Specialty Coffee</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1 style="text-align: center;">Specialty Coffee</h1>
+        <hr>
+        <p style="text-align: center;">Prove the authenticity of coffee using the Ethereum blockchain.</p>
+    </div>
+
+    <div class="container">
+        <h2>Quick Start</h2>
+        <div class="form-group">
+            <p>To go successfully from growing coffee cherries to consumer's cup, you need to initiate the actions in the following order:</p>
+            <ol>
+                <li>Grow</li>
+                <li>Pick</li>
+                <li>Process</li>
+                <li>Taste</li>
+                <li>Grade (optional)</li>
+                <li>Sell</li>
+                <li>Pack</li>
+                <li>List</li>
+                <li>Buy</li>
+                <li>Ship</li>
+                <li>Receive</li>
+                <li>Roast</li>
+                <li>Offer</li>
+                <li>Purchase</li>
+            </ol>
+            <hr>
+        </div>
+        <div class="form-break"></div>
+
+        <h2>Product Overview</h2>
+        <div class="form-group">
+            SKU
+            <br>
+            <input class="input-field" type="number" id="sku" name="sku" value=1><br>
+            UPC
+            <br>
+            <input type="number" id="upc" name="upc" value=1><br>
+            <br>
+            <div class=button-div>
+                <button class="btn-fetchOne" id="button" type="button" data-id="15">Fetch Data 1</button>
+                <button class="btn-fetchTwo" id="button" type="button" data-id="16">Fetch Data 2</button>
+                <button class="btn-fetchThree" id="button" type="button" data-id="17">Fetch Data 3</button>
+                <button class="btn-fetchFour" id="button" type="button" data-id="18">Fetch Data 4</button>
+                <button class="btn-fetchFive" id="button" type="button" data-id="19">Fetch Data 5</button>
+            </div>
+        </div>
+        <div class="form-break"></div>
+
+        <h2>Farm Details</h2>
+        <div class="form-group">
+            Farm Name
+            <br>
+            <input type="text" id="originFarmName" name="originFarmName" value="Several Small Farmers"><br>
+            Farm Information
+            <br>
+            <input type="text" id="originFarmInformation" name="originFarmInformation" value="Terroir Caldas"><br>
+            Farm Elevation
+            <br>
+            <input type="number" id="originFarmElevation" name="originFarmElevation" value=1800>m a.s.l.<br>
+            Farm Latitude
+            <br>
+            <input type="text" id="originFarmLatitude" name="originFarmLatitude" value="-38.239770"><br>
+            Farm Longitude
+            <br>
+            <input type="text" id="originFarmLongitude" name="originFarmLongitude" value="144.341490"><br>
+            Product Cultivar
+            <br>
+            <input type="text" id="originProductCultivar" name="originProductCultivar" value="Colombia & Castillo Naranjal"><br>
+            <br>
+            <div class=button-div>
+                <button class="btn-grow" id="button" type="button" data-id="1">1. Grow</button>
+                <button class="btn-pick" id="button" type="button" data-id="2">2. Pick</button>
+            </div>
+        </div>
+        <div class="form-break"></div>
+
+        <h2>Mill Details</h2>
+        <div class="form-group">
+            Product Wet Mill Type
+            <ul>
+                <li>1 - washed</li>
+                <li>2 - natural</li>
+                <li>3 - honey</li>
+            </ul>
+            <br>
+            <input type="number" id="productProcessType" name="productProcessType" value=1><br>
+            Product Lot Size
+            <br>
+            <input type="number" id="productLotSize" name="productLotSize" value=1200>kg<br>
+            <br>
+            <div class=button-div>
+                <button class="btn-process" id="button" type="button" data-id="3">3. Process</button>
+                <button class="btn-sell" id="button" type="button" data-id="6">6. Sell</button>
+                <button class="btn-pack" id="button" type="button" data-id="7">7. Pack</button>
+            </div>
+        </div>
+        <div class="form-break"></div>
+
+        <h2>Distributor Details</h2>
+        <div class="form-group">
+            Product Notes
+            <br>
+            <input type="text" id="productNotes" name="productNotes" value="Brown Sugar / Guava / Honey / Cocoa"><br>
+            Product Score
+            <br>
+            <input type="text" id="productScore" name="productScore" value="89.75"><br>
+            <br>
+            <div class=button-div>
+                <button class="btn-taste" id="button" type="button" data-id="4">4. Taste</button>
+                <button class="btn-grade" id="button" type="button" data-id="5">5. Grade</button>
+                <button class="btn-list" id="button" type="button" data-id="8">8. List</button>
+                <button class="btn-ship" id="button" type="button" data-id="10">10. Ship</button>
+            </div>
+        </div>
+        <div class="form-break"></div>
+
+        <h2>Roaster Details</h2>
+        <div class="form-group">
+            Product Free On Board (FOB) Price
+            <br>
+            <input type="number" id="productFOBPrice" name="productFOBPrice" value=1>ETH<br>
+            Product Roasted For
+            <ul>
+                <li>1 - espresso</li>
+                <li>2 - filter</li>
+                <li>3 - both espresso & filter</li>
+            </ul>
+            <br>
+            <input type="number" id="productRoastedFor" name="productRoastedFor" value=1><br>
+            <br>
+            <div class=button-div>
+                <button class="btn-buy" id="button" type="button" data-id="9">9. Buy</button>
+                <button class="btn-receive" id="button" type="button" data-id="11">11. Receive</button>
+                <button class="btn-roast" id="button" type="button" data-id="12">12. Roast</button>
+            </div>
+        </div>
+        <div class="form-break"></div>
+
+        <h2>Product Details</h2>
+        <div class="form-group">
+            Product Price
+            <br>
+            <input type="number" id="productPrice" name="productPrice" value=2>ETH<br>
+            Pay Price by Purchase
+            <br>
+            <input type="number" id="productBuyPrice" name="productBuyPrice" value=3>ETH<br>
+            <br>
+            <div class=button-div>
+                <button class="btn-offer" id="button" type="button" data-id="13">13. Offer</button>
+                <button class="btn-purchase" id="button" type="button" data-id="14">14. Purchase</button>
+            </div>
+        </div>
+        <div class="form-break"></div>
+        <hr>
+    </div>
+
+    <h2>Transaction History<span id="ftc-history"></span></h2>
+    <div class="container">
+        <ul id="ftc-events">
+            <!-- Events will appear here from app.js -->
+        </ul>
+        <br>
+        <hr>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- <script src="js/web3.min.js"></script> -->
+    <script src="js/truffle-contract.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
