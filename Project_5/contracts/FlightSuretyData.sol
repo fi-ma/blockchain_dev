@@ -7,10 +7,12 @@ contract FlightSuretyData is AccessControl {
     using SafeMath for uint256;
 
     // Roles definition
-    bytes32 private constant _AIRLINER_ROLE = keccak256("AIRLINER_ROLE");
+    bytes32 private constant _AIRLINER_ROLE = keccak256("AIRLINER");
+    bytes32 private constant _ORACLE_ROLE = keccak256("ORACLE");
 
-    // Airlines registration
+    // Airlines registration fee and flight insurance cap
     uint256 private constant _AIRLINE_REG_FEE = 10 ether;
+    uint256 private constant _FLIGHT_INSURANCE_CAP = 1 ether;
 
     bool public operational = true; // Blocks all state changes throughout the contract if false
     address private _contractOwner; // Account used to deploy contract
@@ -23,14 +25,19 @@ contract FlightSuretyData is AccessControl {
         bool isApproved;
         bool isFunded;
     }
-    
+
     mapping (address => Airline) private _airlines;
+    mapping (bytes32 => address[]) private _insurances; // Flight number to insuree addresses
+    mapping (bytes32 => uint256) private _insurees; // Insuree to insured amount
+    mapping (address => uint256) private _pendingWithdrawals; // Insuree to withdrawal amount
 
     event Received(address _address, address indexed _iAddress, uint256 _amount);
+    event Funded(address _address, address indexed _iAddress, uint256 _amount);
 
     constructor () public {
         _contractOwner = msg.sender;
         super._setupRole(_AIRLINER_ROLE, msg.sender);
+        super._setupRole(_ORACLE_ROLE, msg.sender);
     }
 
     /********************************************************************************************/
@@ -60,13 +67,13 @@ contract FlightSuretyData is AccessControl {
         _;
     }
 
-    modifier requireFundedAirline() {
-        require(_airlines[msg.sender].isFunded, "Calling airline is not funded");
+    modifier requireHasAirlinerRole() {
+        require(super.hasRole(_AIRLINER_ROLE, msg.sender), "Sender does not have Airliner Role");
         _;
     }
 
-    modifier requireHasAirlinerRole() {
-        require(super.hasRole(_AIRLINER_ROLE, msg.sender), "Sender does not have Airliner Role");
+    modifier requireHasOracleRole() {
+        require(super.hasRole(_ORACLE_ROLE, msg.sender), "Sender does not have Oracle Role");
         _;
     }
 
@@ -107,15 +114,35 @@ contract FlightSuretyData is AccessControl {
     * @dev Buy insurance for a flight
     *
     */
-    function buy() external payable {
+    function buy(bytes32 _flight) external payable requireIsOperational {
+        require(
+            msg.value > 0 &&
+            msg.value <= _FLIGHT_INSURANCE_CAP,
+            "Flight insurance out of range"
+        );
+        
+        require(
+            _insurees[keccak256(abi.encodePacked(_flight, msg.sender))] == 0,
+            "Passenger already insured for given flight"
+        );
 
+        _insurances[_flight] += msg.sender;
+        _insurees[keccak256(abi.encodePacked(_flight, msg.sender))] = msg.value;
     }
 
     /**
      *  @dev Credits payouts to insurees
     */
-    function creditInsurees() external pure {
+    function creditInsurees(bytes32 _flight) external requireIsOperational requireHasOracleRole {
+        require(
+            _insurees[_address].isInsured &&
+            _insurees[_address].isEnded &&
+            _insurees[_address].isDelayed
+        );
 
+        uint256 amount = _insurees[_flight][msg.sender];
+        _insurees[_flight][msg.sender] = 0;
+        _pendingWithdrawals[_address] = _pendingWithdrawals[_address].add(amount);
     }
 
     /**
@@ -131,13 +158,19 @@ contract FlightSuretyData is AccessControl {
     *      resulting in insurance payouts, the contract should be self-sustaining
     *
     */
-    function fund() public payable requireIsOperational requireHasAirlinerRole {
+    function fund()
+        public
+        payable
+        requireIsOperational
+        requireHasAirlinerRole
+        requireApprovedAirline
+    {
         require(!_airlines[msg.sender].isFunded, "Airline is funded already");
-        require(msg.value >= _AIRLINE_REG_FEE, "Funding fee for a new airline is at least 10 Ether");
+        require(msg.value >= _AIRLINE_REG_FEE, "Funding fee for a new airline is too low");
 
         _airlines[msg.sender].isFunded = true;
-        
-        super.grantRole(_AIRLINER_ROLE, msg.sender);
+
+        emit Funded(msg.sender, msg.sender, msg.value);
     }
 
     function getFlightKey
