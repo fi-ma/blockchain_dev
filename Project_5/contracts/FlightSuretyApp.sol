@@ -13,7 +13,7 @@ contract FlightSuretyApp {
     /********************************************************************************************/
 
     // Flight Surety Data contract
-    // FlightSuretyData flightSuretyData;
+    FlightSuretyData flightSuretyData;
 
     // Flight status codes
     uint8 private constant _STATUS_CODE_UNKNOWN = 0;
@@ -23,28 +23,25 @@ contract FlightSuretyApp {
     uint8 private constant _STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant _STATUS_CODE_LATE_OTHER = 50;
 
-    address private contractOwner; // Account used to deploy contract
+    address private _contractOwner; // Account used to deploy contract
 
     struct Flight {
         bool isRegistered;
         uint8 statusCode;
-        uint256 updatedTimestamp;
         address airline;
+        uint256 updatedTimestamp;
     }
 
-    mapping(bytes32 => Flight) private flights;
+    mapping(bytes32 => Flight) private _flights;
 
     constructor (address _dataContract) public {
-        contractOwner = msg.sender;
-        // flightSuretyData = FlightSuretyData(_dataContract);
+        _contractOwner = msg.sender;
+        flightSuretyData = FlightSuretyData(_dataContract);
     }
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
-
-    // Modifiers help avoid duplication of code. They are typically used to validate something
-    // before a function is allowed to be executed.
 
     /**
     * @dev Modifier that requires the "operational" boolean variable to be "true"
@@ -61,7 +58,7 @@ contract FlightSuretyApp {
     * @dev Modifier that requires the "ContractOwner" account to be the function caller
     */
     modifier requireContractOwner() {
-        require(msg.sender == contractOwner, "Caller is not contract owner");
+        require(msg.sender == _contractOwner, "Caller is not contract owner");
         _;
     }
 
@@ -92,7 +89,7 @@ contract FlightSuretyApp {
     }
 
    /**
-    * @dev Register a future flight for insuring.
+    * @dev Register a future flight for insuring
     *
     */
     function registerFlight() external pure {
@@ -312,6 +309,6 @@ contract FlightSuretyApp {
 
 }
 
-/*contract FlightSuretyData {
-    function()
-}*/
+contract FlightSuretyData {
+    function first() internal pure {}
+}

@@ -18,13 +18,15 @@ contract FlightSuretyData is AccessControl {
     address private _contractOwner; // Account used to deploy contract
     
     // Tuple to store registration info on airlines
-    // An airline is approved once majority consensus from existing airlines, participating in
-    // the program is achieved
-    // An airline can be funded only once it is approved
     struct Airline {
-        bool isApproved;
         bool isFunded;
+        string name;
     }
+
+    /**
+    *   Figure out how the oracle flow will be, regarding crediting passengers for delayed flights
+    *   
+    */
 
     mapping (address => Airline) private _airlines;
     mapping (bytes32 => address[]) private _insurances; // Flight number to insuree addresses
@@ -35,9 +37,13 @@ contract FlightSuretyData is AccessControl {
     event Funded(address _address, address indexed _iAddress, uint256 _amount);
 
     constructor () public {
-        _contractOwner = msg.sender;
-        super._setupRole(_AIRLINER_ROLE, msg.sender);
-        super._setupRole(_ORACLE_ROLE, msg.sender);
+        _contractOwner = _msgSender();
+        super._setupRole(_AIRLINER_ROLE, _msgSender());
+        super._setupRole(_ORACLE_ROLE, _msgSender());
+        _airlines[_msgSender()] = Airline({
+            isFunded: true,
+            name: "First National"
+        });
     }
 
     /********************************************************************************************/
@@ -56,24 +62,19 @@ contract FlightSuretyData is AccessControl {
 
     /**
     * @dev Modifier that requires the "ContractOwner" account to be the function caller
+    *
     */
     modifier requireContractOwner() {
-        require(msg.sender == _contractOwner, "Caller is not contract owner");
+        require(_msgSender() == _contractOwner, "Caller is not contract owner");
         _;
     }
 
-    modifier requireApprovedAirline() {
-        require(_airlines[msg.sender].isApproved, "Calling airline is not approved");
-        _;
-    }
-
-    modifier requireHasAirlinerRole() {
-        require(super.hasRole(_AIRLINER_ROLE, msg.sender), "Sender does not have Airliner Role");
-        _;
-    }
-
+    /**
+    * @dev Modifier that requires the caller to have the "_ORACLE_ROLE" role
+    *
+    */
     modifier requireHasOracleRole() {
-        require(super.hasRole(_ORACLE_ROLE, msg.sender), "Sender does not have Oracle Role");
+        require(super.hasRole(_ORACLE_ROLE, _msgSender()), "Sender does not have Oracle Role");
         _;
     }
 
@@ -94,20 +95,35 @@ contract FlightSuretyData is AccessControl {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-   /**
+    /**
+    * @dev Gets `isFunded` for an airliner `_address`
+    *
+    */
+    function getFundedStatus(address _address) external view returns (bool) {
+        return _airlines[_address].isFunded;
+    }
+
+    /**
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
     */
-    function registerAirline(address _address)
+    function registerAirline(address _address, string calldata _name)
         external
         requireIsOperational
-        requireHasAirlinerRole
     {
+        require(
+            super.hasRole(_AIRLINER_ROLE, _msgSender()),
+            "Sender does not have Airliner Role"
+        );
+        require(_airlines[_msgSender()].isFunded, "Airline is not funded");
+        
         _airlines[_address] = Airline({
-            isApproved: true,
-            isFunded: false
+            isFunded: false,
+            name: _name
         });
+
+        super.grantRole(_AIRLINER_ROLE, _address);
     }
 
    /**
@@ -120,37 +136,60 @@ contract FlightSuretyData is AccessControl {
             msg.value <= _FLIGHT_INSURANCE_CAP,
             "Flight insurance out of range"
         );
-        
         require(
-            _insurees[keccak256(abi.encodePacked(_flight, msg.sender))] == 0,
+            _insurees[keccak256(abi.encodePacked(_flight, _msgSender()))] == 0,
             "Passenger already insured for given flight"
         );
 
-        _insurances[_flight] += msg.sender;
-        _insurees[keccak256(abi.encodePacked(_flight, msg.sender))] = msg.value;
+        _insurances[_flight].push(_msgSender());
+        _insurees[keccak256(abi.encodePacked(_flight, _msgSender()))] = msg.value;
     }
 
     /**
-     *  @dev Credits payouts to insurees
+    *  @dev Credits payouts to insurees
+    *
     */
-    function creditInsurees(bytes32 _flight) external requireIsOperational requireHasOracleRole {
+    function creditInsurees(bytes32 _flight)
+        external
+        requireIsOperational
+        requireHasOracleRole
+    {
         require(
-            _insurees[_address].isInsured &&
-            _insurees[_address].isEnded &&
-            _insurees[_address].isDelayed
+            _insurances[_flight].length > 0,
+            "No passengers insured for given flight"
         );
 
-        uint256 amount = _insurees[_flight][msg.sender];
-        _insurees[_flight][msg.sender] = 0;
-        _pendingWithdrawals[_address] = _pendingWithdrawals[_address].add(amount);
+        for (uint256 i; i < _insurances[_flight].length; i++) {
+            address _insuree = _insurances[_flight][i];
+            
+            uint256 _insuredAmount = _insurees[
+                keccak256(abi.encodePacked(_flight, _insuree))
+            ];
+            uint256 _amount = _insuredAmount.add(_insuredAmount.div(2));
+
+            _insurees[keccak256(abi.encodePacked(_flight, _insuree))] = 0;
+
+            _pendingWithdrawals[_insuree] =
+                _pendingWithdrawals[_insuree].add(_amount);
+        }
+
+        delete _insurances[_flight];
     }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay() external pure {
+    function pay() external requireIsOperational {
+        uint256 _amount = _pendingWithdrawals[_msgSender()];
 
+        if (_amount > 0) {
+            _pendingWithdrawals[_msgSender()] = 0;
+
+            (bool success,) = _msgSender().call{value: _amount}("");
+
+            require(success);
+        }
     }
 
    /**
@@ -162,28 +201,17 @@ contract FlightSuretyData is AccessControl {
         public
         payable
         requireIsOperational
-        requireHasAirlinerRole
-        requireApprovedAirline
     {
-        require(!_airlines[msg.sender].isFunded, "Airline is funded already");
+        require(
+            super.hasRole(_AIRLINER_ROLE, _msgSender()),
+            "Sender does not have Airliner Role"
+        );
+        require(!_airlines[_msgSender()].isFunded, "Airline is funded already");
         require(msg.value >= _AIRLINE_REG_FEE, "Funding fee for a new airline is too low");
 
-        _airlines[msg.sender].isFunded = true;
+        _airlines[_msgSender()].isFunded = true;
 
-        emit Funded(msg.sender, msg.sender, msg.value);
-    }
-
-    function getFlightKey
-    (
-        address _airline,
-        string memory _flight,
-        uint256 _timestamp
-    )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encodePacked(_airline, _flight, _timestamp));
+        emit Funded(_msgSender(), _msgSender(), msg.value);
     }
 
     /**
@@ -191,7 +219,7 @@ contract FlightSuretyData is AccessControl {
     *
     */
     receive() external payable requireIsOperational {
-        emit Received(msg.sender, msg.sender, msg.value);
+        emit Received(_msgSender(), _msgSender(), msg.value);
     }
 
     /**
@@ -199,6 +227,6 @@ contract FlightSuretyData is AccessControl {
     *
     */
     fallback() external payable requireIsOperational {
-        emit Received(msg.sender, msg.sender, msg.value);
+        emit Received(_msgSender(), _msgSender(), msg.value);
     }
 }
