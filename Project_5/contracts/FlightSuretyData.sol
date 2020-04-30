@@ -1,14 +1,14 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract FlightSuretyData is AccessControl {
     using SafeMath for uint256;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     // Roles definition
-    bytes32 private constant _AIRLINER_ROLE = keccak256("AIRLINER");
-    bytes32 private constant _ORACLE_ROLE = keccak256("ORACLE");
+    bytes32 public constant AIRLINER_ROLE = keccak256("AIRLINER");
 
     // Airlines registration fee and flight insurance cap
     uint256 private constant _AIRLINE_REG_FEE = 10 ether;
@@ -16,6 +16,7 @@ contract FlightSuretyData is AccessControl {
 
     bool public operational = true; // Blocks all state changes throughout the contract if false
     address private _contractOwner; // Account used to deploy contract
+    mapping (address => uint256) private _authorizedContracts; // Keeps track of authorized app contract(s)
     
     // Tuple to store registration info on airlines
     struct Airline {
@@ -23,11 +24,7 @@ contract FlightSuretyData is AccessControl {
         string name;
     }
 
-    /**
-    *   Figure out how the oracle flow will be, regarding crediting passengers for delayed flights
-    *   
-    */
-
+    uint256 public airlinesCount;
     mapping (address => Airline) private _airlines;
     mapping (bytes32 => address[]) private _insurances; // Flight number to insuree addresses
     mapping (bytes32 => uint256) private _insurees; // Insuree to insured amount
@@ -36,14 +33,19 @@ contract FlightSuretyData is AccessControl {
     event Received(address _address, address indexed _iAddress, uint256 _amount);
     event Funded(address _address, address indexed _iAddress, uint256 _amount);
 
-    constructor () public {
+    constructor (address _address) public {
         _contractOwner = _msgSender();
-        super._setupRole(_AIRLINER_ROLE, _msgSender());
-        super._setupRole(_ORACLE_ROLE, _msgSender());
-        _airlines[_msgSender()] = Airline({
+
+        super._setupRole(AIRLINER_ROLE, _msgSender());
+        super._setRoleAdmin(AIRLINER_ROLE, AIRLINER_ROLE);
+        super.grantRole(AIRLINER_ROLE, _address);
+        
+        _airlines[_address] = Airline({
             isFunded: true,
             name: "First National"
         });
+        
+        airlinesCount = airlinesCount.add(1);
     }
 
     /********************************************************************************************/
@@ -69,12 +71,11 @@ contract FlightSuretyData is AccessControl {
         _;
     }
 
-    /**
-    * @dev Modifier that requires the caller to have the "_ORACLE_ROLE" role
-    *
-    */
-    modifier requireHasOracleRole() {
-        require(super.hasRole(_ORACLE_ROLE, _msgSender()), "Sender does not have Oracle Role");
+    modifier requireIsAuthorized() {
+        require(
+            _authorizedContracts[_msgSender()] == 1,
+            "Caller is not an authorized app contract"
+        );
         _;
     }
 
@@ -87,13 +88,46 @@ contract FlightSuretyData is AccessControl {
     *
     * When operational mode is disabled, all write transactions except for this one will fail
     */
-    function setOperatingStatus(bool _mode) external requireContractOwner {
+    function setOperatingStatus(bool _mode) public requireContractOwner {
         operational = _mode;
+    }
+
+    /**
+    * @dev Authorizes `_address` for remote calls
+    *
+    */
+    function authorizeContract(address _address)
+        public
+        requireIsOperational
+        requireContractOwner
+    {
+        _authorizedContracts[_address] = 1;
+    }
+
+    /**
+    * @dev Deauthorizes `_address` for remote calls
+    *
+    */
+    function deauthorizeContract(address _address)
+        public
+        requireIsOperational
+        requireContractOwner
+    {
+        if (_authorizedContracts[_address] == 1)
+            _authorizedContracts[_address] = 0;
     }
 
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
+
+    /**
+    * @dev Returns `true` if `_address` has Airliner Role
+    *
+    */
+    function hasAirlinerRole(address _address) external view returns (bool) {
+        return super.hasRole(AIRLINER_ROLE, _address);
+    }
 
     /**
     * @dev Gets `isFunded` for an airliner `_address`
@@ -105,25 +139,28 @@ contract FlightSuretyData is AccessControl {
 
     /**
     * @dev Add an airline to the registration queue
-    *      Can only be called from FlightSuretyApp contract
+    * 
+    * Can only be called from FlightSuretyApp contract
     *
     */
     function registerAirline(address _address, string calldata _name)
         external
         requireIsOperational
+        requireIsAuthorized
+        returns (bool)
     {
-        require(
-            super.hasRole(_AIRLINER_ROLE, _msgSender()),
-            "Sender does not have Airliner Role"
-        );
-        require(_airlines[_msgSender()].isFunded, "Airline is not funded");
+        if (_airlines[_address].isFunded == true) {
+            return false;
+        }
         
         _airlines[_address] = Airline({
             isFunded: false,
             name: _name
         });
 
-        super.grantRole(_AIRLINER_ROLE, _address);
+        super.grantRole(AIRLINER_ROLE, _address);
+
+        return true;
     }
 
    /**
@@ -146,20 +183,22 @@ contract FlightSuretyData is AccessControl {
     }
 
     /**
-    *  @dev Credits payouts to insurees
+    * @dev Credits payouts to insurees
+    * 
+    * Can only be called from FlightSuretyApp contract
     *
     */
     function creditInsurees(bytes32 _flight)
         external
         requireIsOperational
-        requireHasOracleRole
+        requireIsAuthorized
     {
         require(
             _insurances[_flight].length > 0,
             "No passengers insured for given flight"
         );
 
-        for (uint256 i; i < _insurances[_flight].length; i++) {
+        for (uint256 i = 0; i < _insurances[_flight].length; i++) {
             address _insuree = _insurances[_flight][i];
             
             uint256 _insuredAmount = _insurees[
@@ -203,13 +242,17 @@ contract FlightSuretyData is AccessControl {
         requireIsOperational
     {
         require(
-            super.hasRole(_AIRLINER_ROLE, _msgSender()),
+            super.hasRole(AIRLINER_ROLE, _msgSender()),
             "Sender does not have Airliner Role"
         );
         require(!_airlines[_msgSender()].isFunded, "Airline is funded already");
-        require(msg.value >= _AIRLINE_REG_FEE, "Funding fee for a new airline is too low");
+        require(
+            msg.value >= _AIRLINE_REG_FEE,
+            "Sent funding fee for a new airline is too low"
+        );
 
         _airlines[_msgSender()].isFunded = true;
+        airlinesCount = airlinesCount.add(1);
 
         emit Funded(_msgSender(), _msgSender(), msg.value);
     }

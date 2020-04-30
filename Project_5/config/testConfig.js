@@ -1,8 +1,7 @@
-var FlightSuretyApp = artifacts.require("FlightSuretyApp");
-var FlightSuretyData = artifacts.require("FlightSuretyData");
-var BigNumber = require('bignumber.js');
+const FlightSuretyApp = artifacts.require("FlightSuretyApp");
+const FlightSuretyData = artifacts.require("FlightSuretyData");
 
-var Config = async function(accounts) {
+const Config = async function(accounts) {
     
     // These test addresses are useful when you need to add
     // multiple users in test scripts
@@ -27,7 +26,6 @@ var Config = async function(accounts) {
     return {
         owner: owner,
         firstAirline: firstAirline,
-        weiMultiple: (new BigNumber(10)).pow(18),
         testAddresses: testAddresses,
         flightSuretyData: flightSuretyData,
         flightSuretyApp: flightSuretyApp
