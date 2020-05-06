@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract FlightSuretyData is AccessControl {
     using SafeMath for uint256;
-    using EnumerableSet for EnumerableSet.AddressSet;
 
     // Roles definition
     bytes32 public constant AIRLINER_ROLE = keccak256("AIRLINER");
@@ -41,11 +40,9 @@ contract FlightSuretyData is AccessControl {
         super.grantRole(AIRLINER_ROLE, _address);
         
         _airlines[_address] = Airline({
-            isFunded: true,
+            isFunded: false,
             name: "First National"
         });
-        
-        airlinesCount = airlinesCount.add(1);
     }
 
     /********************************************************************************************/
@@ -102,6 +99,8 @@ contract FlightSuretyData is AccessControl {
         requireContractOwner
     {
         _authorizedContracts[_address] = 1;
+
+        super.grantRole(AIRLINER_ROLE, _address);
     }
 
     /**
@@ -113,8 +112,11 @@ contract FlightSuretyData is AccessControl {
         requireIsOperational
         requireContractOwner
     {
-        if (_authorizedContracts[_address] == 1)
+        if (_authorizedContracts[_address] == 1) {
             _authorizedContracts[_address] = 0;
+
+            super.revokeRole(AIRLINER_ROLE, _address);
+        }
     }
 
     /********************************************************************************************/

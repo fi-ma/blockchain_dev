@@ -24,8 +24,9 @@ contract FlightSuretyApp {
     uint8 private constant _STATUS_CODE_LATE_OTHER = 50;
 
     uint8 private constant _MULTI_PARTY = 4; // Multi-party concensus is required above this number of registered airlines
-    address[] private _airlineVoters; // Accounts of airlines that already participated in multi-party voting process
     address private _contractOwner; // Account used to deploy contract
+
+    mapping (address => address[]) public _airlineVoters; // Accounts of airlines that already participated in multi-party voting process
 
     struct Flight {
         bool isRegistered;
@@ -35,6 +36,13 @@ contract FlightSuretyApp {
     }
 
     mapping (bytes32 => Flight) private _flights;
+
+    event Voted(
+        address _votedFor,
+        address _voter,
+        uint256 _votes,
+        uint256 _neededVotes
+    );
 
     constructor (address _dataContract) public {
         _contractOwner = msg.sender;
@@ -75,13 +83,13 @@ contract FlightSuretyApp {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-
-   /**
+    /**
     * @dev Add an airline to the registration queue
     *
     */
     function registerAirline(address _address, string calldata _name)
         external
+        requireIsOperational
         returns (bool _success, uint256 _votes)
     {
         require(
@@ -92,19 +100,23 @@ contract FlightSuretyApp {
             flightSuretyData.getFundedStatus(msg.sender),
             "Calling airline is not funded"
         );
+        require(
+            !flightSuretyData.hasAirlinerRole(_address),
+            "Airline is registered already"
+        );
 
         uint256 _airlinesCount = flightSuretyData.airlinesCount();
 
-        if (_airlinesCount <= _MULTI_PARTY) {
-            (_success) = flightSuretyData.registerAirline(_address, _name);
+        if (_airlinesCount < _MULTI_PARTY) {
+            _success = flightSuretyData.registerAirline(_address, _name);
 
             return (_success, 0);
         }
 
         bool _isDuplicate;
 
-        for (uint16 i = 0; i < _airlineVoters.length; i++) {
-            if (_airlineVoters[i] == msg.sender) {
+        for (uint256 i = 0; i < _airlineVoters[_address].length; i++) {
+            if (_airlineVoters[_address][i] == msg.sender) {
                 _isDuplicate = true;
                 break;
             }
@@ -112,13 +124,25 @@ contract FlightSuretyApp {
 
         require(!_isDuplicate, "Caller voted already");
 
-        _airlineVoters.push(msg.sender);
+        _airlineVoters[_address].push(msg.sender);
 
-        if (_airlineVoters.length >= _airlinesCount.div(2)) {
-            (_success) = flightSuretyData.registerAirline(_address, _name);
+        if (_airlinesCount.mod(2) != 0) {
+            _airlinesCount = _airlinesCount.add(1);
         }
 
-        return (_success, _airlineVoters.length);
+        emit Voted(
+            _address,
+            msg.sender,
+            _airlineVoters[_address].length,
+            _airlinesCount.div(2)
+        );
+
+        if (_airlineVoters[_address].length >= _airlinesCount.div(2)) {
+            _airlineVoters[_address] = new address[](0);
+            _success = flightSuretyData.registerAirline(_address, _name);
+        }
+
+        return (_success, _airlineVoters[_address].length);
     }
 
    /**
@@ -133,6 +157,7 @@ contract FlightSuretyApp {
         uint8 _statusCode
     )
         private
+        requireIsOperational
     {
         if (_statusCode == _STATUS_CODE_LATE_AIRLINE) {
             bytes32 _flightKey = keccak256(
@@ -151,6 +176,7 @@ contract FlightSuretyApp {
         uint256 _timestamp
     )
         external
+        requireIsOperational
     {
         uint8 _index = getRandomIndex(msg.sender);
 
@@ -225,7 +251,7 @@ contract FlightSuretyApp {
     );
 
     // Register an oracle with the contract
-    function registerOracle() external payable {
+    function registerOracle() external payable requireIsOperational {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
 
@@ -255,7 +281,8 @@ contract FlightSuretyApp {
         uint256 _timestamp,
         uint8 _statusCode
     )
-    external
+        external
+        requireIsOperational
     {
         require(
             (_oracles[msg.sender].indexes[0] == _index) ||
@@ -288,7 +315,7 @@ contract FlightSuretyApp {
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function generateIndexes(address _account) internal returns (uint8[3] memory) {
+    function generateIndexes(address _account) private returns (uint8[3] memory) {
         uint8[3] memory _indexes;
         _indexes[0] = getRandomIndex(_account);
 
@@ -306,7 +333,7 @@ contract FlightSuretyApp {
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function getRandomIndex(address _account) internal returns (uint8) {
+    function getRandomIndex(address _account) private returns (uint8) {
         uint8 _maxValue = 10;
 
         // Pseudo random number...the incrementing nonce adds variation
@@ -333,18 +360,18 @@ abstract contract FlightSuretyData {
     bool public operational;
     uint256 public airlinesCount;
 
-    function getFundedStatus(address _address)
-        external
-        virtual
-        view
-        returns (bool);
-    
     function hasAirlinerRole(address _address)
         external
         virtual
         view
         returns (bool);
     
+    function getFundedStatus(address _address)
+        external
+        virtual
+        view
+        returns (bool);
+
     function registerAirline(address _address, string calldata _name)
         external
         virtual

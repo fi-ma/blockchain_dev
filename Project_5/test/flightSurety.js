@@ -63,21 +63,97 @@ contract('Flight Surety Tests', async (accounts) => {
         await config.flightSuretyData.setOperatingStatus(true);
     });
 
-    /*it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
+    it('(airline) cannot register itself', async () => {
         // ARRANGE
         let newAirline = accounts[2];
-        let result;
+        let result = true;
 
         // ACT
         try {
-            result = await config.flightSuretyApp.registerAirline(newAirline, "Second Airline", { from: config.firstAirline });
+            await config.flightSuretyApp.registerAirline(newAirline, "Second Airline", { from: newAirline });
         } catch(e) {
-            console.log(e);
+            result = false;
         }
 
-        let result = await config.flightSuretyData.isAirline.call(newAirline); 
+        // ASSERT
+        assert.equal(result, false, "Airline should not be able to register itself");
+    });
+
+    it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
+        // ARRANGE
+        let newAirline = accounts[2];
+        let result = true;
+
+        // ACT
+        try {
+            await config.flightSuretyApp.registerAirline(newAirline, "Second Airline", { from: config.firstAirline });
+        } catch(e) {
+            result = false;
+        }
 
         // ASSERT
         assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
-    });*/
+    });
+
+    it('(airline) can register an Airline using registerAirline() once funded', async () => {
+        // ARRANGE
+        let newAirline = accounts[2];
+        let result = true;
+
+        await config.flightSuretyData.fund({ from: config.firstAirline, value: web3.utils.toWei("15", "ether") });
+
+        let funded = await config.flightSuretyData.getFundedStatus(config.firstAirline);
+
+        try {
+            await config.flightSuretyApp.registerAirline(newAirline, "Second Airline", { from: config.firstAirline });
+        } catch(e) {
+            result = false;
+        }
+
+        // ASSERT
+        assert.equal(funded, true, "Airline should be funded");
+        assert.equal(result, true, "Airline should be able to register another airline after funding");
+    });
+
+    it('(airline) can register Fifth and Sixth Airline once at least 50% of existing airlines vote for it', async () => {
+        // ARRANGE
+        let secondAirline = accounts[2];
+        let thirdAirline = accounts[3];
+        let fourthAirline = accounts[4];
+        let fifthAirline = accounts[5];
+        let sixthAirline = accounts[6];
+        let resultFifth = true;
+        let resultSixth = true;
+
+        await config.flightSuretyData.fund({ from: secondAirline, value: web3.utils.toWei("10", "ether") });
+
+        await config.flightSuretyApp.registerAirline(thirdAirline, "Third Airline", { from: secondAirline });
+        await config.flightSuretyData.fund({ from: thirdAirline, value: web3.utils.toWei("10", "ether") });
+
+        await config.flightSuretyApp.registerAirline(fourthAirline, "Fourth Airline", { from: thirdAirline });
+        await config.flightSuretyData.fund({ from: fourthAirline, value: web3.utils.toWei("10", "ether") });
+
+        await config.flightSuretyApp.registerAirline(fifthAirline, "Fifth Airline", { from: config.firstAirline });
+        await config.flightSuretyApp.registerAirline(fifthAirline, "Fifth Airline", { from: secondAirline });
+        
+        try {
+            await config.flightSuretyData.fund({ from: fifthAirline, value: web3.utils.toWei("10", "ether") });
+        } catch(e) {
+            resultFifth = false;
+        }
+
+        await config.flightSuretyApp.registerAirline(sixthAirline, "Sixth Airline", { from: thirdAirline });
+        await config.flightSuretyApp.registerAirline(sixthAirline, "Sixth Airline", { from: fourthAirline });
+        await config.flightSuretyApp.registerAirline(sixthAirline, "Sixth Airline", { from: fifthAirline });
+
+        try {
+            await config.flightSuretyData.fund({ from: sixthAirline, value: web3.utils.toWei("10", "ether") });
+        } catch(e) {
+            resultSixth = false;
+        }
+        
+        // ASSERT
+        assert.equal(resultFifth, true, "Fifth airline should be able to get funded once registered");
+        assert.equal(resultSixth, true, "Sixth airline should be able to get funded once registered");
+    });
 });
