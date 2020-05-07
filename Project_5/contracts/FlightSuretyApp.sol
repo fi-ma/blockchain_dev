@@ -255,15 +255,36 @@ contract FlightSuretyApp {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
 
-        uint8[3] memory _indexes = generateIndexes(msg.sender);
+        if(!_oracles[msg.sender].isRegistered) {
+            uint8[3] memory _indexes = generateIndexes(msg.sender);
 
-        _oracles[msg.sender] = Oracle({
-            isRegistered: true,
-            indexes: _indexes
-        });
+            _oracles[msg.sender] = Oracle({
+                isRegistered: true,
+                indexes: _indexes
+            });
+        }
     }
 
-    function getMyIndexes() external view returns (uint8[3] memory) {
+    // Decouple oracle from the contract
+    function revokeOracle(address _address) external requireIsOperational requireContractOwner {
+        require(_oracles[_address].isRegistered, "Not registered as an oracle");
+
+        delete _oracles[_address];
+    }
+
+    // Unregister oracle from the contract
+    function unregisterOracle() external requireIsOperational {
+        require(_oracles[msg.sender].isRegistered, "Not registered as an oracle");
+
+        delete _oracles[msg.sender];
+    }
+
+    function getMyIndexes()
+        external
+        view
+        requireIsOperational
+        returns (uint8[3] memory)
+    {
         require(_oracles[msg.sender].isRegistered, "Not registered as an oracle");
 
         return _oracles[msg.sender].indexes;
@@ -315,7 +336,11 @@ contract FlightSuretyApp {
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function generateIndexes(address _account) private returns (uint8[3] memory) {
+    function generateIndexes(address _account)
+        private
+        requireIsOperational
+        returns (uint8[3] memory)
+    {
         uint8[3] memory _indexes;
         _indexes[0] = getRandomIndex(_account);
 
@@ -333,7 +358,11 @@ contract FlightSuretyApp {
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function getRandomIndex(address _account) private returns (uint8) {
+    function getRandomIndex(address _account)
+        private
+        requireIsOperational
+        returns (uint8)
+    {
         uint8 _maxValue = 10;
 
         // Pseudo random number...the incrementing nonce adds variation
