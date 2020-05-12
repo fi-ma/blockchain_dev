@@ -9,7 +9,7 @@ import './flightsurety.css';
         // Read transaction
         contract.isOperational((error, result) => {
             console.log('isOperational', error, result);
-            display('Operational Status', 'Check if contract is operational', [{label: 'Operational Status', error: error, value: result}]);
+            displayHeader('Operational Status', 'Check if contract is operational', [{label: 'Operational Status', error: error, value: result}]);
         });
 
         // Authorize app contract
@@ -49,7 +49,19 @@ import './flightsurety.css';
             console.log('fundAirline Fifth National', error, result);
         });
 
-        // User-submitted transaction
+        // User-submitted transactions
+        DOM.elid('submit-buy-insurance').addEventListener('click', () => {
+            let flight = JSON.parse(DOM.elid('flight-info').value);
+            let amount = DOM.elid('buy-insurance').value;
+            
+            console.log(`Buy ${amount} eth worth of insurance for ${flight.number}, ${flight.airlineName}, ${flight.timestamp}`);
+
+            // Write transaction
+            contract.buy(flight.number, flight.airlineName, flight.timestamp, amount, (error, result) => {
+                displayMid('Oracles', 'Trigger oracles', [{label: 'Fetch Flight Status', error: error, value: `${flight.airlineName} - ${result.flight}; ${flight.departure}`}]);
+            });
+        });
+
         DOM.elid('submit-oracle').addEventListener('click', () => {
             let flight = JSON.parse(DOM.elid('flight-info').value);
             
@@ -57,14 +69,42 @@ import './flightsurety.css';
 
             // Write transaction
             contract.fetchFlightStatus(flight.number, flight.airlineName, flight.timestamp, (error, result) => {
-                display('Oracles', 'Trigger oracles', [{label: 'Fetch Flight Status', error: error, value: `${flight.airlineName} - ${result.flight}; ${flight.departure}`}]);
+                displayFooter('Oracles', 'Trigger oracles', [{label: 'Fetch Flight Status', error: error, value: `${flight.airlineName} - ${result.flight}; ${flight.departure}`}]);
             });
         });
     });
 })();
 
-function display(title, description, results) {
-    let displayDiv = DOM.elid("display-wrapper");
+function displayHeader(title, description, results) {
+    let displayDiv = DOM.elid("display-wrapper-head");
+    let section = DOM.section();
+    section.appendChild(DOM.h2(title));
+    section.appendChild(DOM.h5(description));
+    results.map((result) => {
+        let row = section.appendChild(DOM.div({className:'row'}));
+        row.appendChild(DOM.div({className: 'col-sm-4 field'}, result.label));
+        row.appendChild(DOM.div({className: 'col-sm-8 field-value'}, result.error ? String(result.error) : String(result.value)));
+        section.appendChild(row);
+    })
+    displayDiv.append(section);
+}
+
+function displayMid(title, description, results) {
+    let displayDiv = DOM.elid("display-wrapper-mid");
+    let section = DOM.section();
+    section.appendChild(DOM.h2(title));
+    section.appendChild(DOM.h5(description));
+    results.map((result) => {
+        let row = section.appendChild(DOM.div({className:'row'}));
+        row.appendChild(DOM.div({className: 'col-sm-4 field'}, result.label));
+        row.appendChild(DOM.div({className: 'col-sm-8 field-value'}, result.error ? String(result.error) : String(result.value)));
+        section.appendChild(row);
+    })
+    displayDiv.append(section);
+}
+
+function displayFooter(title, description, results) {
+    let displayDiv = DOM.elid("display-wrapper-foot");
     let section = DOM.section();
     section.appendChild(DOM.h2(title));
     section.appendChild(DOM.h5(description));

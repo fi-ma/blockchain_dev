@@ -169,19 +169,33 @@ contract FlightSuretyData is AccessControl {
     * @dev Buy insurance for a flight
     *
     */
-    function buy(bytes32 _flight) external payable requireIsOperational {
+    function buy
+    (
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp
+    )
+        external
+        payable
+        requireIsOperational
+    {
         require(
             msg.value > 0 &&
             msg.value <= _FLIGHT_INSURANCE_CAP,
             "Flight insurance out of range"
         );
+
+        bytes32 _flightKey = keccak256(
+            abi.encodePacked(_airline, _flight, _timestamp)
+        );
+
         require(
-            _insurees[keccak256(abi.encodePacked(_flight, _msgSender()))] == 0,
+            _insurees[keccak256(abi.encodePacked(_flightKey, _msgSender()))] == 0,
             "Passenger already insured for given flight"
         );
 
-        _insurances[_flight].push(_msgSender());
-        _insurees[keccak256(abi.encodePacked(_flight, _msgSender()))] = msg.value;
+        _insurances[_flightKey].push(_msgSender());
+        _insurees[keccak256(abi.encodePacked(_flightKey, _msgSender()))] = msg.value;
     }
 
     /**

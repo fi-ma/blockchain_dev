@@ -3,6 +3,8 @@ import Config from './config.json';
 import Web3 from 'web3';
 import express from 'express';
 
+const FLIGHT_STATUS_CODE = [0, 10, 20, 30, 40, 50];
+
 let config = Config['localhost'];
 let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
@@ -19,7 +21,7 @@ web3.eth.getAccounts()
     airlines['Fourth National'] = accounts[4];
     airlines['Fifth National'] = accounts[5];
 
-    for (let i = 20, p = Promise.resolve(); i < 200; i++) {
+    for (let i = 20, p = Promise.resolve(); i < 100; i++) {
         let address = accounts[i];
         
         p = p.then(_ => new Promise(resolve =>
@@ -50,31 +52,69 @@ web3.eth.getAccounts()
 flightSuretyApp.events.OracleRequest({
     fromBlock: 0
 }, function (error, event) {
-    if (error) console.log(error)
+    if (error) console.log(error);
     console.log(event);
-    // console.log(event.returnValues._index, event.returnValues._airline, event.returnValues._flight, event.returnValues._timestamp);
 
+    let index = event.returnValues._index;
     let airlineAddr = event.returnValues._airline;
+    let flight = event.returnValues._flight;
+    let timestamp = event.returnValues._timestamp;
 
-    for (let i = 0; i < oracles.length; i++) {
+    for (let i = 0, p = Promise.resolve(); i < oracles.length; i++) {
         let address = oracles[i].address;
+        // let statusCode = FLIGHT_STATUS_CODE[Math.floor(Math.random() * FLIGHT_STATUS_CODE.length)];
+        let statusCode = 0;
 
-        for (let j = 0, p = Promise.resolve(); j < 3; j++) {
-            let index = indexes[j];
-            let statusCode = 0;
+        if (Math.floor(Math.random() * 1.5) === 0) {
+            statusCode = 20;
+        }
+
+        if (oracles[i].indexes.includes(index)) {
+            console.log(`Oracle account ${address} contains index ${index} among ${oracles[i].indexes} - submitting status code ${statusCode}`);
 
             p = p.then(_ => new Promise(resolve => {
                 flightSuretyApp.methods.submitOracleResponse(
                     index,
-
+                    airlineAddr,
+                    flight,
+                    timestamp,
+                    statusCode
                 ).send({
                     from: address
+                }, (err) => {
+                    if (err) console.log(`${err}`);
                 });
 
                 resolve();
             }));
         }
     }
+});
+
+flightSuretyApp.events.OracleReport({
+    fromBlock: 0
+}, function (error, event) {
+    if (error) console.log(error)
+
+    let status = event.returnValues._status;
+    let airlineAddr = event.returnValues._airline;
+    let flight = event.returnValues._flight;
+    let timestamp = event.returnValues._timestamp;
+
+    console.log(`The flight ${flight} by ${airlineAddr} on ${timestamp} is having status of ${status}`);
+});
+
+flightSuretyApp.events.FlightStatusInfo({
+    fromBlock: 0
+}, function (error, event) {
+    if (error) console.log(error)
+
+    let status = event.returnValues._status;
+    let airlineAddr = event.returnValues._airline;
+    let flight = event.returnValues._flight;
+    let timestamp = event.returnValues._timestamp;
+
+    console.log(`The flight ${flight} by ${airlineAddr} on ${timestamp} has been finalized with status ${status}`);
 });
 
 const app = express();

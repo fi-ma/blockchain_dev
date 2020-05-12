@@ -11,12 +11,21 @@ export default class Contract {
         this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
         this.initialize(callback);
         this.owner = null;
-        // this.airlines = [];
         this.airlines = {};
         this.passengers = [];
     }
 
     initialize(callback) {
+        if (window.ethereum) {
+            try {
+                // Request account access
+                await window.ethereum.enable();
+            } catch (error) {
+                // User denied account access...
+                console.error("User denied account access")
+            }
+        }
+
         this.web3.eth.getAccounts((error, accts) => {
             this.owner = accts[0];
 
@@ -81,6 +90,21 @@ export default class Contract {
         self.flightSuretyApp.methods
             .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
             .send({from: self.owner}, (error, result) => {
+                callback(error, payload);
+            });
+    }
+
+    buy(flight, airlineName, timestamp, amount, callback) {
+        let self = this;
+        let payload = {
+            airline: self.airlines[airlineName],
+            flight: flight,
+            timestamp: timestamp
+        };
+
+        self.flightSuretyData.methods
+            .buy(payload.airline, payload.flight, payload.timestamp)
+            .send({from: '', value: self.web3.utils.toWei(amount, "ether")}, (error, result) => {
                 callback(error, payload);
             });
     }

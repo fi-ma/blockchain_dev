@@ -18,46 +18,75 @@
         </button>
     </nav>
 
-    <main class="container">
-        <div id="display-wrapper" class="top-20">
+    <main>
+        <div class="top-120"></div>
+        <div class="container">
+            <div id="display-wrapper-head" class="top-20"></div>
+            <div class="top-20">
+                <div class="field">
+                    <label class="form" for="flight-info">Select flight</label>
+                </div>
+                <div class="field">
+                    <select id="flight-info"></select>
+                    <script>
+                        function createNode(element) {
+                            return document.createElement(element);
+                        }
+
+                        function append(parent, el) {
+                            return parent.appendChild(el);
+                        }
+
+                        const select = document.getElementById('flight-info');
+                        const url = 'http://localhost:3000/api';
+
+                        fetch(url)
+                            .then((resp) => resp.json())
+                            .then(function(data) {
+                                let flights = data.flights;
+
+                                return flights.map(function(flight) {
+                                    let option = createNode('option');
+                                    option.value = JSON.stringify(flight);
+                                    option.innerHTML = `${flight.number} - ${flight.departure}`;
+                                    append(select, option);
+                                })
+                            })
+                            .catch(function(error) {
+                                console.log(error);
+                            });
+                    </script>
+                </div>
+            </div>
+            <div id="display-wrapper-mid" class="top-20"></div>
         </div>
-        <div class="row top-20">
-            <!--<label class="form">Flight</label> <input type="text" id="flight-info"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>-->
-            <label class="form" for="flight-info">Flight</label>
-            <select id="flight-info"></select>
-            <script>
-                function createNode(element) {
-                    return document.createElement(element);
-                }
-
-                function append(parent, el) {
-                    return parent.appendChild(el);
-                }
-
-                const select = document.getElementById('flight-info');
-                const url = 'http://localhost:3000/api';
-
-                fetch(url)
-                    .then((resp) => resp.json())
-                    .then(function(data) {
-                        let flights = data.flights;
-
-                        return flights.map(function(flight) {
-                            let option = createNode('option');
-                            option.value = JSON.stringify(flight);
-                            option.innerHTML = `${flight.number} - ${flight.departure}`;
-                            append(select, option);
-                        })
-                    })
-                    .catch(function(error) {
-                        console.log(error);
-                    });
-            </script>
-                
-                <!--<option value='{"number": "1N2345", "airline": "First National", "timestamp": 1603087200}'>1N2345 - 19 Oct 2020 08:00</option>
-                <option value='{"number": "2N7890", "airline": "Second National", "timestamp": 1603107000}'>2N7890 - 19 Oct 2020 13:30</option>-->
-            
-            <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+        <div class="container">
+            <div class="top-20">
+                <div class="field">
+                    <label class="form" for="buy-insurance">Buy insurance for selected flight (pay between 0.01 - 1 Eth)</label>
+                </div>
+                <div class="field">
+                    <input type="number" id="buy-insurance" placeholder="1" step="0.01" min="0.01" max="1">
+                    <btn class="btn btn-primary" id="submit-buy-insurance">Buy insurance</btn>
+                </div>
+            </div>
+            <div class="top-20">
+                <div class="field">
+                    <label class="form">Collect insurance in case your flight was delayed due to airline fault</label>
+                </div>
+                <div class="field">
+                    <btn class="btn btn-primary" id="submit-collect-insurance">Collect insurance</btn>
+                </div>
+            </div>
+            <div class="top-20">
+                <div class="field">
+                    <label class="form">Query Oracles for flight status to determine if you are eligible for insurance payout</label>
+                </div>
+                <div class="field">
+                    <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+                </div>
+            </div>
+            <div id="display-wrapper-foot" class="top-20"></div>
         </div>
     </main>
 </body>

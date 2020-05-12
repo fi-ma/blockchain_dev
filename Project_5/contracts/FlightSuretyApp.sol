@@ -145,11 +145,39 @@ contract FlightSuretyApp {
         return (_success, _airlineVoters[_address].length);
     }
 
-   /**
+    /**
+    * @dev Generate a request for oracles to fetch flight information
+    *
+    */
+    function fetchFlightStatus
+    (
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp
+    )
+        external
+        requireIsOperational
+    {
+        uint8 _index = _getRandomIndex(msg.sender);
+
+        // Generate a unique key for storing the request
+        bytes32 _key = keccak256(
+            abi.encodePacked(_index, _airline, _flight, _timestamp)
+        );
+
+        _oracleResponses[_key] = ResponseInfo({
+            requester: msg.sender,
+            isOpen: true
+        });
+
+        emit OracleRequest(_index, _airline, _flight, _timestamp);
+    }
+
+    /**
     * @dev Called after oracle has updated flight status
     *
     */
-    function processFlightStatus
+    function _processFlightStatus
     (
         address _airline,
         string memory _flight,
@@ -168,31 +196,6 @@ contract FlightSuretyApp {
         }
     }
 
-    // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus
-    (
-        address _airline,
-        string calldata _flight,
-        uint256 _timestamp
-    )
-        external
-        requireIsOperational
-    {
-        uint8 _index = getRandomIndex(msg.sender);
-
-        // Generate a unique key for storing the request
-        bytes32 _key = keccak256(
-            abi.encodePacked(_index, _airline, _flight, _timestamp)
-        );
-
-        _oracleResponses[_key] = ResponseInfo({
-            requester: msg.sender,
-            isOpen: true
-        });
-
-        emit OracleRequest(_index, _airline, _flight, _timestamp);
-    }
-
 // region ORACLE MANAGEMENT
 
     // Incremented to add pseudo-randomness at various points
@@ -202,7 +205,7 @@ contract FlightSuretyApp {
     uint256 public constant REGISTRATION_FEE = 1 ether;
 
     // Number of oracles that must respond for valid status
-    uint256 private constant _MIN_RESPONSES = 3;
+    uint256 private constant _MIN_RESPONSES = 8;
 
     struct Oracle {
         bool isRegistered;
@@ -256,7 +259,7 @@ contract FlightSuretyApp {
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
 
         if(!_oracles[msg.sender].isRegistered) {
-            uint8[3] memory _indexes = generateIndexes(msg.sender);
+            uint8[3] memory _indexes = _generateIndexes(msg.sender);
 
             _oracles[msg.sender] = Oracle({
                 isRegistered: true,
@@ -318,7 +321,7 @@ contract FlightSuretyApp {
 
         require(
             _oracleResponses[_key].isOpen,
-            "Flight or timestamp do not match oracle request"
+            "Flight or timestamp do not match oracle request, or flight is already closed"
         );
 
         _oracleResponses[_key].responses[_statusCode].push(msg.sender);
@@ -328,37 +331,39 @@ contract FlightSuretyApp {
         emit OracleReport(_airline, _flight, _timestamp, _statusCode);
 
         if (_oracleResponses[_key].responses[_statusCode].length >= _MIN_RESPONSES) {
+            _oracleResponses[_key].isOpen = false;
+
             emit FlightStatusInfo(_airline, _flight, _timestamp, _statusCode);
 
             // Handle flight status as appropriate
-            processFlightStatus(_airline, _flight, _timestamp, _statusCode);
+            _processFlightStatus(_airline, _flight, _timestamp, _statusCode);
         }
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function generateIndexes(address _account)
+    function _generateIndexes(address _account)
         private
         requireIsOperational
         returns (uint8[3] memory)
     {
         uint8[3] memory _indexes;
-        _indexes[0] = getRandomIndex(_account);
+        _indexes[0] = _getRandomIndex(_account);
 
         _indexes[1] = _indexes[0];
         while(_indexes[1] == _indexes[0]) {
-            _indexes[1] = getRandomIndex(_account);
+            _indexes[1] = _getRandomIndex(_account);
         }
 
         _indexes[2] = _indexes[1];
         while((_indexes[2] == _indexes[0]) || (_indexes[2] == _indexes[1])) {
-            _indexes[2] = getRandomIndex(_account);
+            _indexes[2] = _getRandomIndex(_account);
         }
 
         return _indexes;
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function getRandomIndex(address _account)
+    function _getRandomIndex(address _account)
         private
         requireIsOperational
         returns (uint8)
