@@ -98,9 +98,11 @@ contract FlightSuretyData is AccessControl {
         requireIsOperational
         requireContractOwner
     {
-        _authorizedContracts[_address] = 1;
+        if (_authorizedContracts[_address] == 0) {
+            _authorizedContracts[_address] = 1;
 
-        super.grantRole(AIRLINER_ROLE, _address);
+            super.grantRole(AIRLINER_ROLE, _address);
+        }
     }
 
     /**
@@ -204,47 +206,46 @@ contract FlightSuretyData is AccessControl {
     * Can only be called from FlightSuretyApp contract
     *
     */
-    function creditInsurees(bytes32 _flight)
+    function creditInsurees(bytes32 _flightKey)
         external
         requireIsOperational
         requireIsAuthorized
     {
-        require(
-            _insurances[_flight].length > 0,
-            "No passengers insured for given flight"
-        );
+        for (uint256 i = 0; i < _insurances[_flightKey].length; i++) {
+            address _insuree = _insurances[_flightKey][i];
 
-        for (uint256 i = 0; i < _insurances[_flight].length; i++) {
-            address _insuree = _insurances[_flight][i];
-            
             uint256 _insuredAmount = _insurees[
-                keccak256(abi.encodePacked(_flight, _insuree))
+                keccak256(abi.encodePacked(_flightKey, _insuree))
             ];
-            uint256 _amount = _insuredAmount.add(_insuredAmount.div(2));
 
-            _insurees[keccak256(abi.encodePacked(_flight, _insuree))] = 0;
+            if (_insuredAmount > 0) {
+                uint256 _amount = _insuredAmount.add(_insuredAmount.div(2));
 
-            _pendingWithdrawals[_insuree] =
-                _pendingWithdrawals[_insuree].add(_amount);
+                _insurees[keccak256(abi.encodePacked(_flightKey, _insuree))] = 0;
+
+                _pendingWithdrawals[_insuree] =
+                    _pendingWithdrawals[_insuree].add(_amount);
+            }
         }
-
-        delete _insurances[_flight];
     }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay() external requireIsOperational {
+    function withdraw() external requireIsOperational {
         uint256 _amount = _pendingWithdrawals[_msgSender()];
 
-        if (_amount > 0) {
-            _pendingWithdrawals[_msgSender()] = 0;
+        require(
+            _amount > 0,
+            "Passenger has no pending withdrawal"
+        );
 
-            (bool success,) = _msgSender().call{value: _amount}("");
+        _pendingWithdrawals[_msgSender()] = 0;
 
-            require(success);
-        }
+        (bool success,) = _msgSender().call{value: _amount}("");
+
+        require(success);
     }
 
    /**

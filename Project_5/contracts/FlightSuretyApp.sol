@@ -205,7 +205,7 @@ contract FlightSuretyApp {
     uint256 public constant REGISTRATION_FEE = 1 ether;
 
     // Number of oracles that must respond for valid status
-    uint256 private constant _MIN_RESPONSES = 8;
+    uint256 private constant _MIN_RESPONSES = 5;
 
     struct Oracle {
         bool isRegistered;
@@ -411,5 +411,5 @@ abstract contract FlightSuretyData {
         virtual
         returns (bool);
     
-    function creditInsurees(bytes32 _flight) external virtual;
+    function creditInsurees(bytes32 _flightKey) external virtual;
 }

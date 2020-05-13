@@ -3,13 +3,11 @@ import Contract from './contract';
 import './flightsurety.css';
 
 (async() => {
-    let result = null;
-
     let contract = new Contract('localhost', () => {
         // Read transaction
         contract.isOperational((error, result) => {
             console.log('isOperational', error, result);
-            displayHeader('Operational Status', 'Check if contract is operational', [{label: 'Operational Status', error: error, value: result}]);
+            displayHeader('Operational Status', 'Check if contract is operational', [{ label: 'Operational Status', error: error, value: `${result}` }]);
         });
 
         // Authorize app contract
@@ -58,18 +56,28 @@ import './flightsurety.css';
 
             // Write transaction
             contract.buy(flight.number, flight.airlineName, flight.timestamp, amount, (error, result) => {
-                displayMid('Oracles', 'Trigger oracles', [{label: 'Fetch Flight Status', error: error, value: `${flight.airlineName} - ${result.flight}; ${flight.departure}`}]);
+                console.log('buy', error, result)
+                displayMid('Insurance', 'Buying insurance for your flight', [{label: 'Paying Insurance Status', error: error, value: `Success! You just bought insurance in the amount of ${amount} Ether, for flight number ${flight.number}, operated by ${flight.airlineName}, departing at ${flight.departure}`}]);
+            });
+        });
+
+        DOM.elid('submit-collect-insurance').addEventListener('click', () => {
+            // Write transaction
+            contract.withdraw((error, result) => {
+                console.log('withdraw', error, result);
+                displayMid('Insurance', 'Collecting insurance for your delayed flight(s)', [{label: 'Collecting Insurance Status', error: error, value: `Success! You are eligible for insurance payout and this has now been sent to your wallet!`}]);
             });
         });
 
         DOM.elid('submit-oracle').addEventListener('click', () => {
             let flight = JSON.parse(DOM.elid('flight-info').value);
             
-            console.log(flight.number, flight.airlineName, flight.timestamp);
+            console.log(`Submit to oracles ${flight.number}, ${flight.airlineName}, ${flight.timestamp}`);
 
             // Write transaction
             contract.fetchFlightStatus(flight.number, flight.airlineName, flight.timestamp, (error, result) => {
-                displayFooter('Oracles', 'Trigger oracles', [{label: 'Fetch Flight Status', error: error, value: `${flight.airlineName} - ${result.flight}; ${flight.departure}`}]);
+                console.log('fetchFlightStatus', error, result);
+                displayFooter('Oracles', 'Trigger oracles', [{label: 'Fetch Flight Status', error: error, value: `${flight.airlineName} - ${flight.number}; ${flight.departure}`}]);
             });
         });
     });

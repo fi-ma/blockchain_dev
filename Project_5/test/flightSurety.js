@@ -2,6 +2,7 @@ const Test = require('../config/testConfig.js');
 
 contract('Flight Surety Tests', async (accounts) => {
     let config;
+    let timestamp = Date.parse('19 Oct 2020 08:00:00 GMT+0200') / 1000;
 
     before('setup contract', async () => {
         config = await Test.Config(accounts);
@@ -155,5 +156,45 @@ contract('Flight Surety Tests', async (accounts) => {
         // ASSERT
         assert.equal(resultFifth, true, "Fifth airline should be able to get funded once registered");
         assert.equal(resultSixth, true, "Sixth airline should be able to get funded once registered");
+    });
+
+    it('(passenger) can buy insurance', async () => {
+        // ARRANGE
+        let passenger = accounts[7];
+        let result = true;
+
+        try {
+            await config.flightSuretyData.buy(
+                config.firstAirline,
+                "1N1234",
+                timestamp,
+                { from: passenger, value: web3.utils.toWei("1", "ether") }
+            );
+        } catch(e) {
+            result = false;
+        }
+
+        // ASSERT
+        assert.equal(result, true, "Passenger should be able to buy insurance for a flight");
+    });
+
+    it('(passenger) cannot buy insurance for the same flight twice', async () => {
+        // ARRANGE
+        let passenger = accounts[7];
+        let result = true;
+
+        try {
+            await config.flightSuretyData.buy(
+                config.firstAirline,
+                "1N1234",
+                timestamp,
+                { from: passenger, value: web3.utils.toWei("1", "ether") }
+            );
+        } catch(e) {
+            result = false;
+        }
+
+        // ASSERT
+        assert.equal(result, false, "Passenger should not be able to buy insurance for the same flight twice");
     });
 });

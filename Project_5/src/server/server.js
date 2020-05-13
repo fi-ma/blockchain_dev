@@ -62,12 +62,13 @@ flightSuretyApp.events.OracleRequest({
 
     for (let i = 0, p = Promise.resolve(); i < oracles.length; i++) {
         let address = oracles[i].address;
-        // let statusCode = FLIGHT_STATUS_CODE[Math.floor(Math.random() * FLIGHT_STATUS_CODE.length)];
-        let statusCode = 0;
+        let statusCode = FLIGHT_STATUS_CODE[Math.floor(Math.random() * FLIGHT_STATUS_CODE.length)];
+        
+        /*let statusCode = 0;
 
         if (Math.floor(Math.random() * 1.5) === 0) {
             statusCode = 20;
-        }
+        }*/
 
         if (oracles[i].indexes.includes(index)) {
             console.log(`Oracle account ${address} contains index ${index} among ${oracles[i].indexes} - submitting status code ${statusCode}`);
