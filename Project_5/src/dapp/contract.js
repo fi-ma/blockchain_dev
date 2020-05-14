@@ -58,7 +58,7 @@ export default class Contract {
         });
     }
     
-    isOperational() {
+    isOperational(callback) {
         let self = this;
 
         self.flightSuretyApp.methods
@@ -108,7 +108,7 @@ export default class Contract {
 
         self.flightSuretyApp.methods
             .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
-            .send({from: self.owner, gas: 2000000}, (error, result) => {
+            .send({from: self.owner, gas: 4712388, gasPrice: 100000000000}, (error, result) => {
                 callback(error, result);
             });
     }
