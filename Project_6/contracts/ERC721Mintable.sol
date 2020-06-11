@@ -480,33 +480,55 @@ contract ERC721Metadata is ERC721Enumerable, usingProvable {
      */
 
     constructor (string memory name, string memory symbol, string memory baseTokenURI) public {
-        // TODO: set instance var values
+        _name = name;
+        _symbol = symbol;
+        _baseTokenURI = baseTokenURI;
 
         _registerInterface(_INTERFACE_ID_ERC721_METADATA);
     }
 
-    // TODO: create external getter functions for name, symbol, and baseTokenURI
+    function name() external view returns (string memory) {
+        return _name;
+    }
+
+    function symbol() external view returns (string memory) {
+        return _symbol;
+    }
+
+    function baseTokenURI() external view returns (string memory) {
+        return _baseTokenURI;
+    }
 
     function tokenURI(uint256 tokenId) external view returns (string memory) {
-        require(_exists(tokenId));
+        require(_exists(tokenId), "Token does not exist");
         return _tokenURIs[tokenId];
     }
 
+    /**
+     * @dev Internal function to set the `tokenURI` for `tokenId`.
+     * See https://github.com/provable-things/ethereum-api/blob/master/provableAPI_0.6.sol
+     * for uint2str() and strConcat() functions.
+     * @param tokenId uint256 ID of the token to set the URI for
+     */
+    function _setTokenURI(uint256 tokenId) internal {
+        require(_exists(tokenId), "Token does not exist");
 
-    // TODO: Create an internal function to set the tokenURI of a specified tokenId
-    // It should be the _baseTokenURI + the tokenId in string form
-    // TIP #1: use strConcat() from the imported provableAPI lib to set the complete token URI
-    // TIP #2: you can also use uint2str() to convert a uint to a string
-        // see https://github.com/provable-things/ethereum-api/blob/master/provableAPI_0.6.sol for strConcat()
-    // require the token exists before setting
-
+        string memory tokenIdAsString = uint2str(tokenId);
+        _tokenURIs[tokenId] = strConcat(_baseTokenURI, tokenIdAsString);
+    }
 }
 
-//  TODO's: Create CustomERC721Token contract that inherits from the ERC721Metadata contract. You can name this contract as you please
-//  1) Pass in appropriate values for the inherited ERC721Metadata contract
-//      - make the base token uri: https://s3-us-west-2.amazonaws.com/udacity-blockchain/capstone/
-//  2) create a public mint() that does the following:
-//      -can only be executed by the contract owner
-//      -takes in a 'to' address, tokenId, and tokenURI as parameters
-//      -returns a true boolean upon completion of the function
-//      -calls the superclass mint and setTokenURI functions
+contract CustomERC721Token is ERC721Metadata
+(
+    "Real Estate Token",
+    "REAL",
+    "https://s3-us-west-2.amazonaws.com/udacity-blockchain/capstone/"
+)
+{
+    function mint(address to, uint256 tokenId) public onlyOwner returns (bool) {
+        super._mint(to, tokenId);
+        super._setTokenURI(tokenId);
+
+        return true;
+    }
+}
