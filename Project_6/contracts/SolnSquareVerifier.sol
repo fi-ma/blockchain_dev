@@ -1,60 +1,88 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.2;
 
-// TODO define a contract call to the zokrates generated solidity contract <Verifier> or <renamedVerifier>
+import "./ERC721Mintable.sol";
 
+contract SolnSquareVerifier is CustomERC721Token {
+    // Verifier contract
+    Verifier verifier;
 
+    // Tuple to hold a token index and token owner's address for a solution
+    struct Solution {
+        uint256 tokenId;
+        address tokenOwner;
+    }
 
-// TODO define another contract named SolnSquareVerifier that inherits from your ERC721Mintable class
+    Solution[] public solutions;
 
+    // Unique solutions mapping
+    mapping (bytes32 => bool) private _submittedSolns;
 
+    event Submitted(address indexed from);
 
-// TODO define a solutions struct that can hold an index & an address
+    constructor (address verifierContract) public {
+        verifier = Verifier(verifierContract);
+    }
 
+    /**
+     * @dev Private function to add `Solution` to `solutions` array
+     *
+     */
+    function _addSolution(uint256 i, address owner) private {
+        solutions.push(
+            Solution({
+                tokenId: i,
+                tokenOwner: owner
+            })
+        );
 
-// TODO define an array of the above struct
+        emit Submitted(owner);
+    }
 
+    /**
+     * @dev Function to mint NFTs for verified and unique solutions
+     *
+     */
+    function mintVerified
+    (
+        uint256 tokenId,
+        address tokenOwner,
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input
+    )
+    public returns (bool)
+    {
+        bytes32 key = keccak256(
+            abi.encodePacked(a, b, c, input)
+        );
 
-// TODO define a mapping to store unique solutions submitted
+        require(!_submittedSolns[key], "SolnSquareVerifier: Solution not unique");
 
+        bool verified = verifier.verifyTx(a, b, c, input);
 
+        if(verified) {
+            _addSolution(tokenId, tokenOwner);
 
-// TODO Create an event to emit when a solution is added
+            _submittedSolns[key] = true;
 
+            bool minted = mint(tokenOwner, tokenId);
+            
+            return minted;
+        }
+        
+        return false;
+    }
+}
 
-
-// TODO Create a function to add the solutions to the array and emit the event
-
-
-
-// TODO Create a function to mint new NFT only after the solution has been verified
-//  - make sure the solution is unique (has not been used before)
-//  - make sure you handle metadata as well as tokenSuplly
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+abstract contract Verifier {
+    function verifyTx
+    (
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input
+    )
+    public virtual returns (bool r);
+}
