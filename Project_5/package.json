@@ -20,7 +20,7 @@
     "@babel/plugin-proposal-class-properties": "^7.8.3",
     "@babel/plugin-proposal-object-rest-spread": "^7.9.5",
     "@babel/preset-env": "^7.9.5",
-    "@openzeppelin/contracts": "^3.0.0-rc.1",
+    "@openzeppelin/contracts": "^4.4.2",
     "@truffle/hdwallet-provider": "^1.0.34",
     "babel-loader": "^8.1.0",
     "bignumber": "^1.1.0",
